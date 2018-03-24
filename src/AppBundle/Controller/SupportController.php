@@ -2,12 +2,11 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Form\Type\ContactFormType;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 class SupportController extends Controller
 {
@@ -16,30 +15,43 @@ class SupportController extends Controller
      */
     public function indexAction(Request $request)
     {
-        $form = $this->createFormBuilder()
-          ->add( 'from', EmailType::class)
-          ->add( 'message', TextareaType::class)
-          ->add( 'send', SubmitType::class)
-          ->getForm();
+        $form = $this->createForm(ContactFormType::Class, null, [
+          'action' => $this->generateUrl('handle_form_submission'),
+        ]);
 
-          $form->handleRequest($request);
+        return $this->render('support/index.html.twig', ['our_form' => $form->createView()] );
+    }
 
-          if($form->isSubmitted() && $form->isValid()){
+    /**
+    * @param Request $request
+    * @Route("/form-submission", name="handle_form_submission")
+    * @Method("POST")
+    */
+    public function handleFormSubmissionACtion(Request $request)
+    {
 
-            $data = $form->getData();
-            dump($data);
+      $form = $this->createForm(ContactFormType::Class);
+      $form->handleRequest($request);
 
-            $message = \Swift_Message::newInstance()
+      if(! $form->isSubmitted() || ! $form->isValid()){
+
+          return $this->redirectToRoute("homepage");
+      }
+
+          $data = $form->getData();
+          dump($data);
+
+          $message = \Swift_Message::newInstance()
               ->setSubject('Support Test')
               ->setFrom($data['from'])
               ->setTo('anava@tkinov.com.mx')
               ->setBody($data['message'], 'text/plain')
-              ;
+          ;
 
-            $this->get('mailer')->send($message);
+          $this->get('mailer')->send($message);
 
-          }
+          $this->addFlash('success', 'Your message was send');
 
-        return $this->render('support/index.html.twig', ['our_form' => $form->createView()] );
-    }
+          return $this->redirectToRoute('homepage');
+     }
 }

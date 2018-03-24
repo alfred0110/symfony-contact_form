@@ -2,8 +2,10 @@
 
 {% block body %}
    <div class="container">
-     
-      {{ form(our_form)}}
+
+     {{ include('flash-messages.html.twig') }}
+
+     {{ form(our_form)}}
 
    </div>
 {% endblock %}
